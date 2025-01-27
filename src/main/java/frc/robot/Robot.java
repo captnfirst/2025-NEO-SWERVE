@@ -5,8 +5,11 @@
 package frc.robot;
 
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import frc.robot.Constants.OperatorConstants;
+import swervelib.SwerveInputStream;
 
 /**
  * The methods in this class are called automatically corresponding to each
@@ -20,6 +23,10 @@ public class Robot extends TimedRobot {
   private Command m_autonomousCommand;
 
   private final RobotContainer m_robotContainer;
+  final XboxController driverXbox = new XboxController(0);
+
+  public boolean loadMode = false;
+  public boolean mainMode = false;
 
   /**
    * This function is run when the robot is first started up and should be used
@@ -102,6 +109,25 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during operator control. */
   @Override
   public void teleopPeriodic() {
+    SwerveInputStream driveAngularVelocity = SwerveInputStream.of(RobotContainer.drivebase.getSwerveDrive(),
+        () -> driverXbox.getLeftY() * -0.8,
+        () -> driverXbox.getLeftX() * -0.5)
+        .withControllerRotationAxis(driverXbox::getRightX)
+        .deadband(OperatorConstants.DEADBAND)
+        .scaleTranslation(0.8)
+        .allianceRelativeControl(true);
+
+    Command driveFieldOrientedAnglularVelocity = RobotContainer.drivebase.driveFieldOriented(driveAngularVelocity);
+    RobotContainer.drivebase.setDefaultCommand(driveFieldOrientedAnglularVelocity);
+
+    if (driverXbox.getAButton()) {
+      RobotContainer.drivebase.zeroGyro();
+    }
+
+    if (driverXbox.getRawButton(3)) {
+      RobotContainer.m_Super.armAngle(5);
+    }
+
   }
 
   @Override
